@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MembershipSystem.API", "MembershipSystem.API.csproj", "{B40954A1-D123-F2CC-DAC4-D2DF321A047C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B40954A1-D123-F2CC-DAC4-D2DF321A047C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B40954A1-D123-F2CC-DAC4-D2DF321A047C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B40954A1-D123-F2CC-DAC4-D2DF321A047C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B40954A1-D123-F2CC-DAC4-D2DF321A047C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F7A637A2-15C8-4C29-A236-06489A6D5A1C}
+	EndGlobalSection
+EndGlobal
