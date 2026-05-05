@@ -164,25 +164,30 @@ Pay with Vipps
 }
 
         [HttpPost("create-test-members")]
-        public IActionResult CreateTestMembers()
+public IActionResult CreateTestMembers()
+{
+    var members = new List<Member>
+    {
+        new Member
         {
-            var members = new List<Member>
-            {
-                new Member
-                {
-                    FullName = "Test Expiring 1",
-                    Email = "eren.bstnc.eb@gmail.com",
-                    EndDate = DateTime.Now.AddDays(3),
-                    IsDeleted = false,
-                    Status = "Active"
-                },
-        };
+            FullName = "Test Expiring 1",
+            Email = "eren.bstnc.eb@gmail.com",
+            PhoneNumber = "12345678",
+            Kommune = "Oslo",
+            Adresse = "Test Street 1",
+            Fodselsdato = new DateTime(1990, 1, 1),
+            EndDate = DateTime.Now.AddDays(3),
+            IsDeleted = false,
+            Status = "Active",
+            StartDate = DateTime.Now
+        },
+    };
 
-            _context.Members.AddRange(members);
-            _context.SaveChanges();
+    _context.Members.AddRange(members);
+    _context.SaveChanges();
 
-            return Ok("Test members created");
-        }
+    return Ok("Test members created");
+}
 
 [AllowAnonymous]
 [HttpGet("payment-result")]
@@ -194,15 +199,11 @@ public async Task<IActionResult> PaymentResult(int memberId, string reference)
     if (payment == null)
         return NotFound("Payment not found");
 
-    // Zaten işlendiyse direkt başarılı göster
     if (payment.PaymentDate != null)
         return Content(GetSuccessHtml(), "text/html");
 
-    // İşlenmediyse callback'i tetikle
     var callbackRequest = new VippsCallbackRequest { Reference = reference };
 
-    // VippsController'daki mantığı buraya taşımak yerine
-    // direkt aynı servisleri kullanalım
     var vippsStatus = await _vippsService.GetPaymentStatus(reference);
 
     if (vippsStatus == "CAPTURED" || vippsStatus == "AUTHORIZED")
