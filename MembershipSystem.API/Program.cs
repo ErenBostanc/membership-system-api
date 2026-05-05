@@ -75,12 +75,6 @@ builder.Services.AddAuthentication("Bearer")
         };
     });
 
-// builder.Services.AddHangfire(config =>
-//    config.UseSqlServerStorage(
-//        builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// builder.Services.AddHangfireServer();
-
 // 🔹 Authorization
 builder.Services.AddAuthorization();
 
@@ -95,43 +89,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// 🔹 Migration ve Seed
+// 🔹 Migration
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-// Debug: connection string'i logla
-var connStr = builder.Configuration.GetConnectionString("DefaultConnection");
-Console.WriteLine("CONNECTION STRING: " + connStr);
-
     db.Database.Migrate();
-
-    if (!db.Users.Any())
-    {
-        var hasher = new PasswordHasher<User>();
-
-        db.Users.Add(new User
-        {
-            Email = "admin@test.com",
-            PasswordHash = hasher.HashPassword(new User(), "1234"),
-            Role = "Admin"
-        });
-
-        db.SaveChanges();
-    }
 }
-
-//using (var scope = app.Services.CreateScope())
-//{
-//    var recurringJobs =
-//        scope.ServiceProvider
-//            .GetRequiredService<IRecurringJobManager>();
-
-//    recurringJobs.AddOrUpdate<MembershipReminderService>(
-//        "membership-reminders",
-//        x => x.CheckExpiringMemberships(),
-//        Cron.Daily);
-//}
 
 // 🔹 Middleware
 app.UseHttpsRedirection();
@@ -140,6 +103,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-//app.UseHangfireDashboard();
 
 app.Run();
