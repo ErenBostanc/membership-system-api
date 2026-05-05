@@ -7,6 +7,10 @@ namespace MembershipSystem.API.Models
         public int Id { get; set; }
         public string FullName { get; set; }
         public string Email { get; set; }
+        public string PhoneNumber { get; set; }
+        public string Kommune { get; set; }
+        public string Adresse { get; set; }
+        public DateTime Fodselsdato { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public string Status { get; set; }

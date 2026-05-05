@@ -11,8 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 🔹 DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer("Server=localhost,1433;Database=MembershipDb;User Id=sa;Password=StrongPass123!;TrustServerCertificate=True"));
-
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddControllers();
 builder.Services.AddHttpClient<VippsService>();
 builder.Services.AddScoped<EmailService>();
