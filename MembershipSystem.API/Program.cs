@@ -12,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 // 🔹 DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 builder.Services.AddControllers();
 builder.Services.AddHttpClient<VippsService>();
 builder.Services.AddScoped<EmailService>();
@@ -49,7 +50,9 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // 🔹 JWT Authentication
-var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]);
+var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt__Secret"]
+    ?? builder.Configuration["Jwt:Secret"]
+    ?? throw new Exception("JWT Secret is not configured!"));
 
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
@@ -69,13 +72,12 @@ builder.Services.AddHangfire(config =>
     config.UseSqlServerStorage(
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
-        builder.Services.AddHangfireServer();
+builder.Services.AddHangfireServer();
 
 // 🔹 Authorization
 builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
-
 
 var app = builder.Build();
 
@@ -86,13 +88,17 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// 🔹 Migration ve Seed
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+    db.Database.Migrate();
+
     if (!db.Users.Any())
     {
         var hasher = new PasswordHasher<User>();
+
         db.Users.Add(new User
         {
             Email = "admin@test.com",
@@ -104,7 +110,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-using(var scope = app.Services.CreateScope())
+using (var scope = app.Services.CreateScope())
 {
     var recurringJobs =
         scope.ServiceProvider
