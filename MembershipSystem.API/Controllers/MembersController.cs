@@ -67,21 +67,25 @@ public IActionResult Create(CreateMemberRequest request)
 
     return Ok(member);
 }
-        [HttpPut("{id}")]
-        public IActionResult Update(int id, Member updatedMember)
-        {
-            var member = _context.Members.Find(id);
+[HttpPut("{id}")]
+public IActionResult Update(int id, CreateMemberRequest request)
+{
+    var member = _context.Members.Find(id);
 
-            if (member == null)
-                return NotFound();
+    if (member == null)
+        return NotFound();
 
-            member.FullName = updatedMember.FullName;
-            member.Email = updatedMember.Email;
+    member.FullName = request.FullName;
+    member.Email = request.Email;
+    member.PhoneNumber = request.PhoneNumber;
+    member.Kommune = request.Kommune;
+    member.Adresse = request.Adresse;
+    member.Fodselsdato = request.Fodselsdato;
 
-            _context.SaveChanges();
+    _context.SaveChanges();
 
-            return Ok(member);
-        }
+    return Ok(member);
+}
 
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
@@ -199,6 +203,7 @@ public IActionResult CreateTestMembers()
 
 [AllowAnonymous]
 [HttpGet("payment-result")]
+[Produces("text/html")]
 public async Task<IActionResult> PaymentResult(int memberId, string reference)
 {
     var payment = _context.Payments
