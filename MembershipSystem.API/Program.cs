@@ -5,6 +5,7 @@ using MembershipSystem.API.Data;
 using MembershipSystem.API.Models;
 using MembershipSystem.API.Services;
 using Hangfire;
+using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
