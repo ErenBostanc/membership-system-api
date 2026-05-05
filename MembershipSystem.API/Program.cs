@@ -4,7 +4,6 @@ using System.Text;
 using MembershipSystem.API.Data;
 using MembershipSystem.API.Models;
 using MembershipSystem.API.Services;
-using Hangfire;
 using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,7 +25,6 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<MembershipReminderService>();
 builder.Services.AddScoped<VippsService>();
 
-// 🔹 Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -75,33 +73,18 @@ builder.Services.AddAuthentication("Bearer")
         };
     });
 
-// 🔹 Authorization
 builder.Services.AddAuthorization();
-
-builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// 🔹 Swagger aktif
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-// 🔹 Migration
-//using (var scope = app.Services.CreateScope())
-//{
-//    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-//    db.Database.Migrate();
-//}
+// 🔹 Swagger her ortamda aktif
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // 🔹 Middleware
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
