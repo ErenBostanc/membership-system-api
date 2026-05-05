@@ -93,6 +93,10 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+// Debug: connection string'i logla
+var connStr = builder.Configuration.GetConnectionString("DefaultConnection");
+Console.WriteLine("CONNECTION STRING: " + connStr);
+
     db.Database.Migrate();
 
     if (!db.Users.Any())
