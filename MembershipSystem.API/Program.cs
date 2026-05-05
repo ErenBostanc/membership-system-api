@@ -68,11 +68,11 @@ builder.Services.AddAuthentication("Bearer")
         };
     });
 
-builder.Services.AddHangfire(config =>
-    config.UseSqlServerStorage(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
+// builder.Services.AddHangfire(config =>
+//    config.UseSqlServerStorage(
+//        builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddHangfireServer();
+// builder.Services.AddHangfireServer();
 
 // 🔹 Authorization
 builder.Services.AddAuthorization();
@@ -110,17 +110,17 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-using (var scope = app.Services.CreateScope())
-{
-    var recurringJobs =
-        scope.ServiceProvider
-            .GetRequiredService<IRecurringJobManager>();
+//using (var scope = app.Services.CreateScope())
+//{
+//    var recurringJobs =
+//        scope.ServiceProvider
+//            .GetRequiredService<IRecurringJobManager>();
 
-    recurringJobs.AddOrUpdate<MembershipReminderService>(
-        "membership-reminders",
-        x => x.CheckExpiringMemberships(),
-        Cron.Daily);
-}
+//    recurringJobs.AddOrUpdate<MembershipReminderService>(
+//        "membership-reminders",
+//        x => x.CheckExpiringMemberships(),
+//        Cron.Daily);
+//}
 
 // 🔹 Middleware
 app.UseHttpsRedirection();
@@ -129,6 +129,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.UseHangfireDashboard();
+//app.UseHangfireDashboard();
 
 app.Run();
