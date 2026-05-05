@@ -46,46 +46,46 @@ public MembersController(
         }
 
         [HttpPost]
-public IActionResult Create(CreateMemberRequest request)
-{
-    var member = new Member
-    {
-        FullName = request.FullName,
-        Email = request.Email,
-        PhoneNumber = request.PhoneNumber,
-        Kommune = request.Kommune,
-        Adresse = request.Adresse,
-        Fodselsdato = request.Fodselsdato,
-        StartDate = DateTime.Now,
-        EndDate = DateTime.Now.AddYears(1),
-        Status = "Active",
-        IsDeleted = false
-    };
+        public IActionResult Create(CreateMemberRequest request)
+        {
+            var member = new Member
+            {
+                FullName = request.FullName,
+                Email = request.Email,
+                PhoneNumber = request.PhoneNumber,
+                Kommune = request.Kommune,
+                Adresse = request.Adresse,
+                Fodselsdato = request.Fodselsdato,
+                StartDate = DateTime.Now,
+                EndDate = DateTime.Now.AddYears(1),
+                Status = "Active",
+                IsDeleted = false
+            };
 
-    _context.Members.Add(member);
-    _context.SaveChanges();
+            _context.Members.Add(member);
+            _context.SaveChanges();
 
-    return Ok(member);
-}
-[HttpPut("{id}")]
-public IActionResult Update(int id, CreateMemberRequest request)
-{
-    var member = _context.Members.Find(id);
+            return Ok(member);
+        }
+        [HttpPut("{id}")]
+        public IActionResult Update(int id, CreateMemberRequest request)
+        {
+            var member = _context.Members.Find(id);
 
-    if (member == null)
-        return NotFound();
+            if (member == null)
+                return NotFound();
 
-    member.FullName = request.FullName;
-    member.Email = request.Email;
-    member.PhoneNumber = request.PhoneNumber;
-    member.Kommune = request.Kommune;
-    member.Adresse = request.Adresse;
-    member.Fodselsdato = request.Fodselsdato;
+            member.FullName = request.FullName;
+            member.Email = request.Email;
+            member.PhoneNumber = request.PhoneNumber;
+            member.Kommune = request.Kommune;
+            member.Adresse = request.Adresse;
+            member.Fodselsdato = request.Fodselsdato;
 
-    _context.SaveChanges();
+            _context.SaveChanges();
 
-    return Ok(member);
-}
+            return Ok(member);
+        }
 
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
@@ -105,9 +105,9 @@ public IActionResult Update(int id, CreateMemberRequest request)
         public IActionResult TestEmail()
         {
             _emailService.SendEmail(
-                "eren.bstnc.eb@gmail.com",  // 👈 buraya kendi mailini yaz
+                "eren.bstnc.eb@gmail.com",
                 "Test Mail",
-                "Bu bir test mailidir"
+                "Dette er et test mail"
             );
 
             return Ok("Test mail gönderildi");
