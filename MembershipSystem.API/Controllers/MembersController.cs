@@ -46,19 +46,27 @@ public MembersController(
         }
 
         [HttpPost]
-        public IActionResult Create(Member member)
-        {
-            member.StartDate = DateTime.Now;
-            member.EndDate = DateTime.Now.AddYears(1);
-            member.Status = "Active";
-            member.IsDeleted = false;
+public IActionResult Create(CreateMemberRequest request)
+{
+    var member = new Member
+    {
+        FullName = request.FullName,
+        Email = request.Email,
+        PhoneNumber = request.PhoneNumber,
+        Kommune = request.Kommune,
+        Adresse = request.Adresse,
+        Fodselsdato = request.Fodselsdato,
+        StartDate = DateTime.Now,
+        EndDate = DateTime.Now.AddYears(1),
+        Status = "Active",
+        IsDeleted = false
+    };
 
-            _context.Members.Add(member);
-            _context.SaveChanges();
+    _context.Members.Add(member);
+    _context.SaveChanges();
 
-            return Ok(member);
-        }
-
+    return Ok(member);
+}
         [HttpPut("{id}")]
         public IActionResult Update(int id, Member updatedMember)
         {

@@ -98,7 +98,6 @@ var returnUrl = $"https://membership-system-api.azurewebsites.net/api/members/pa
             var response = await _httpClient.SendAsync(request);
             var content = await response.Content.ReadAsStringAsync();
 
-            // Bunu ekle
 Console.WriteLine("PAYMENT CREATE RESPONSE:");
 Console.WriteLine(content);
 
@@ -135,7 +134,6 @@ public async Task<string> GetPaymentStatus(string reference)
 {
     try
     {
-        // 1️⃣ Token al
         var tokenResponse = await GetAccessToken();
 
         var tokenJson = JsonDocument.Parse(tokenResponse);
@@ -158,40 +156,33 @@ public async Task<string> GetPaymentStatus(string reference)
         request.Headers.Add("Merchant-Serial-Number",
             _configuration["Vipps:MerchantSerialNumber"]);
 
-        // 3️⃣ Request gönder
         var response = await _httpClient.SendAsync(request);
 
         var content = await response.Content.ReadAsStringAsync();
 
-        // 🔥 DEBUG (terminalde göreceksin)
         Console.WriteLine("VIPPS RESPONSE:");
         Console.WriteLine(content);
 
         if (!response.IsSuccessStatusCode)
             return null;
 
-        // 4️⃣ JSON parse
         var json = JsonDocument.Parse(content);
 
         Console.WriteLine("FULL VIPPS JSON:");
         Console.WriteLine(json.RootElement.ToString());
 
-        // 5️⃣ Farklı ihtimaller
 
-        // direkt state
         if (json.RootElement.TryGetProperty("state", out var state))
         {
             return state.GetString();
         }
 
-        // aggregate.state
         if (json.RootElement.TryGetProperty("aggregate", out var aggregate) &&
             aggregate.TryGetProperty("state", out var aggState))
         {
             return aggState.GetString();
         }
 
-        // payments[0].state
         if (json.RootElement.TryGetProperty("payments", out var payments) &&
             payments.ValueKind == JsonValueKind.Array &&
             payments.GetArrayLength() > 0)
