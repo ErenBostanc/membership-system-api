@@ -74,6 +74,8 @@ _context.SaveChanges();
                 "Idempotency-Key",
                 Guid.NewGuid().ToString());
 
+var returnUrl = $"http://localhost:5086/api/members/payment-result?memberId={memberId}&reference={reference}";
+
             var json = $@"
 {{
   ""amount"": {{
@@ -84,7 +86,7 @@ _context.SaveChanges();
       ""type"":""WALLET""
   }},
   ""reference"":""{reference}"",
-  ""returnUrl"":""$https://localhost:5086/payment-result?memberId={memberId}&reference={reference}"",
+  ""returnUrl"":""{returnUrl}"",
   ""userFlow"":""WEB_REDIRECT""
 }}";
 
@@ -95,6 +97,10 @@ _context.SaveChanges();
 
             var response = await _httpClient.SendAsync(request);
             var content = await response.Content.ReadAsStringAsync();
+
+            // Bunu ekle
+Console.WriteLine("PAYMENT CREATE RESPONSE:");
+Console.WriteLine(content);
 
             var jsonDoc = JsonDocument.Parse(content);
 
@@ -139,7 +145,7 @@ public async Task<string> GetPaymentStatus(string reference)
             .GetString();
 
         // 2️⃣ Doğru endpoint (details önemli!)
-        var url = $"{_configuration["Vipps:BaseUrl"]}/epayment/v1/payments/{reference}/details";
+        var url = $"{_configuration["Vipps:BaseUrl"]}/epayment/v1/payments/{reference}";
 
         var request = new HttpRequestMessage(HttpMethod.Get, url);
 

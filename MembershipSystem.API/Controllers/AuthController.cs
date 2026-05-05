@@ -5,7 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-
+using Microsoft.AspNetCore.Identity;
 
 namespace MembershipSystem.API.Controllers
 {
@@ -14,41 +14,43 @@ namespace MembershipSystem.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public AuthController(AppDbContext context)
+        public AuthController(AppDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
-    [HttpPost("login")]
-    public IActionResult Login(LoginRequest request)
-    {
-        var user = _context.Users
-            .FirstOrDefault(x => x.Email == request.Email);
+        [HttpPost("login")]
+        public IActionResult Login(LoginRequest request)
+        {
+            var user = _context.Users
+                .FirstOrDefault(x => x.Email == request.Email);
 
-        if (user == null)
-            return Unauthorized();
+            if (user == null)
+                return Unauthorized();
 
-        var hasher =
-            new Microsoft.AspNetCore.Identity.PasswordHasher<User>();
+            var hasher = new PasswordHasher<User>();
 
-        var result = hasher.VerifyHashedPassword(
-            user,
-            user.PasswordHash,
-            request.Password);
+            var result = hasher.VerifyHashedPassword(
+                user,
+                user.PasswordHash,
+                request.Password);
 
-        if (result ==
-            Microsoft.AspNetCore.Identity.PasswordVerificationResult.Failed)
-            return Unauthorized();
+            if (result == PasswordVerificationResult.Failed)
+                return Unauthorized();
 
-        var token = GenerateJwtToken(user);
+            var token = GenerateJwtToken(user);
 
-        return Ok(new { token });
-    }
+            return Ok(new { token });
+        }
 
         private string GenerateJwtToken(User user)
         {
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("THIS_IS_A_VERY_LONG_SECRET_KEY_FOR_JWT_123456"));
+            var key = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(_configuration["Jwt:Secret"]));
+
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
@@ -67,35 +69,10 @@ namespace MembershipSystem.API.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-    [HttpPost("register")]
-    public IActionResult Register(RegisterRequest request)
-    {
-        var existingUser =
-            _context.Users.FirstOrDefault(x => x.Email == request.Email);
-
-        if (existingUser != null)
-            return BadRequest("User already exists");
-
-        var hasher =
-            new Microsoft.AspNetCore.Identity.PasswordHasher<User>();
-
-        var user = new User
+        public class LoginRequest
         {
-            Email = request.Email,
-            PasswordHash = hasher.HashPassword(null, request.Password),
-            Role = "User"
-        };
-
-        _context.Users.Add(user);
-        _context.SaveChanges();
-
-        return Ok("User created");
+            public string Email { get; set; }
+            public string Password { get; set; }
+        }
     }
-
-    public class LoginRequest
-    {
-        public string Email { get; set; }
-        public string Password { get; set; }
-    }
-}
 }

@@ -41,11 +41,7 @@ public async Task<IActionResult> Callback([FromBody] VippsCallbackRequest reques
     if (string.IsNullOrEmpty(vippsStatus))
         return BadRequest("Vipps status null");
 
-    // TEST HACK
-    if (vippsStatus == "CREATED" || vippsStatus == "AUTHORIZED")
-        vippsStatus = "CAPTURED";
-
-    if (vippsStatus != "CAPTURED")
+    if (vippsStatus != "CAPTURED" && vippsStatus != "AUTHORIZED")
         return BadRequest($"Payment not completed: {vippsStatus}");
 
     payment.PaymentDate = DateTime.Now;

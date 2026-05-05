@@ -184,8 +184,9 @@ Pay with Vipps
             return Ok("Test members created");
         }
 
-        [HttpGet("payment-result")]
-public IActionResult PaymentResult(int memberId, string reference)
+[AllowAnonymous]
+[HttpGet("payment-result")]
+public async Task<IActionResult> PaymentResult(int memberId, string reference)
 {
     var payment = _context.Payments
         .FirstOrDefault(p => p.PaymentReference == reference);
@@ -193,10 +194,92 @@ public IActionResult PaymentResult(int memberId, string reference)
     if (payment == null)
         return NotFound("Payment not found");
 
-    if (payment.PaymentDate == null)
-        return Ok("Payment is still processing...");
+    // Zaten işlendiyse direkt başarılı göster
+    if (payment.PaymentDate != null)
+        return Content(GetSuccessHtml(), "text/html");
 
-    return Ok("Payment successful, membership renewed");
+    // İşlenmediyse callback'i tetikle
+    var callbackRequest = new VippsCallbackRequest { Reference = reference };
+
+    // VippsController'daki mantığı buraya taşımak yerine
+    // direkt aynı servisleri kullanalım
+    var vippsStatus = await _vippsService.GetPaymentStatus(reference);
+
+    if (vippsStatus == "CAPTURED" || vippsStatus == "AUTHORIZED")
+    {
+        payment.PaymentDate = DateTime.Now;
+
+        var member = _context.Members
+            .FirstOrDefault(m => m.Id == memberId);
+
+        if (member != null)
+        {
+            if (member.EndDate < DateTime.Today)
+                member.EndDate = DateTime.Today.AddYears(1);
+            else
+                member.EndDate = member.EndDate.AddYears(1);
+
+            member.Status = "Active";
+            member.ReminderCount = 0;
+            member.LastReminderSent = null;
+        }
+
+        _context.SaveChanges();
+
+        return Content(GetSuccessHtml(), "text/html");
+    }
+
+    return Content(GetPendingHtml(), "text/html");
+}
+
+private string GetSuccessHtml()
+{
+    return @"
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset='utf-8'>
+        <title>Payment Successful</title>
+        <style>
+            body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f5f5f5; }
+            .box { background: white; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+            h1 { color: #2e7d32; }
+            p { color: #555; }
+        </style>
+    </head>
+    <body>
+        <div class='box'>
+            <h1>✅ Payment Successful!</h1>
+            <p>Your membership has been renewed successfully.</p>
+            <p>You will receive a confirmation email shortly.</p>
+        </div>
+    </body>
+    </html>";
+}
+
+private string GetPendingHtml()
+{
+    return @"
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset='utf-8'>
+        <title>Payment Processing</title>
+        <style>
+            body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f5f5f5; }
+            .box { background: white; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+            h1 { color: #f57c00; }
+            p { color: #555; }
+        </style>
+    </head>
+    <body>
+        <div class='box'>
+            <h1>⏳ Payment Processing...</h1>
+            <p>Your payment is being processed.</p>
+            <p>Please wait a moment and refresh the page.</p>
+        </div>
+    </body>
+    </html>";
 }
     }
 }

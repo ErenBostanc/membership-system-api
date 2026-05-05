@@ -5,6 +5,7 @@ using MembershipSystem.API.Data;
 using MembershipSystem.API.Models;
 using MembershipSystem.API.Services;
 using Hangfire;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,7 +50,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // 🔹 JWT Authentication
-var key = Encoding.UTF8.GetBytes("THIS_IS_A_VERY_LONG_SECRET_KEY_FOR_JWT_123456");
+var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]);
 
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
@@ -92,10 +93,11 @@ using (var scope = app.Services.CreateScope())
 
     if (!db.Users.Any())
     {
+        var hasher = new PasswordHasher<User>();
         db.Users.Add(new User
         {
             Email = "admin@test.com",
-            PasswordHash = "1234",
+            PasswordHash = hasher.HashPassword(new User(), "1234"),
             Role = "Admin"
         });
 
