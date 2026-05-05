@@ -85,11 +85,10 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// 🔹 Swagger her ortamda aktif
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// 🔹 Migration ve Seed
+// 🔹 Migration and Seed
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -123,6 +122,10 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.UseHangfireDashboard();
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    IsReadOnlyFunc = (DashboardContext context) => false,
+    Authorization = new IDashboardAuthorizationFilter[] { }
+});
 
 app.Run();
