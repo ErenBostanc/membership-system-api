@@ -10,8 +10,15 @@ using Microsoft.AspNetCore.Identity;
 var builder = WebApplication.CreateBuilder(args);
 
 // 🔹 DbContext
+var connectionString = 
+    Environment.GetEnvironmentVariable("SQLAZURECONNSTR_DefaultConnection") ??
+    Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection") ??
+    builder.Configuration.GetConnectionString("DefaultConnection");
+
+Console.WriteLine("USING CONNECTION: " + connectionString?.Substring(0, 50));
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(connectionString));
 
 builder.Services.AddControllers();
 builder.Services.AddHttpClient<VippsService>();
