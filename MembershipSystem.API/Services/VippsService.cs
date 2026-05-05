@@ -74,7 +74,7 @@ _context.SaveChanges();
                 "Idempotency-Key",
                 Guid.NewGuid().ToString());
 
-var returnUrl = $"http://localhost:5086/api/members/payment-result?memberId={memberId}&reference={reference}";
+var returnUrl = $"https://membership-system-api.azurewebsites.net/api/members/payment-result?memberId={memberId}&reference={reference}";
 
             var json = $@"
 {{
