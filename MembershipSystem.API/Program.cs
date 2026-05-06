@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using MembershipSystem.API;
 using MembershipSystem.API.Data;
 using MembershipSystem.API.Models;
 using MembershipSystem.API.Services;
@@ -126,7 +127,7 @@ app.MapControllers();
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
     IsReadOnlyFunc = (DashboardContext context) => false,
-    Authorization = new IDashboardAuthorizationFilter[] { }
+    Authorization = new IDashboardAuthorizationFilter[] { new HangfireAuthFilter() }
 });
 
 app.Run();
