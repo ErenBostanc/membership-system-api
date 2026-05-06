@@ -194,7 +194,6 @@ public async Task<string> GetPaymentStatus(string reference)
             }
         }
 
-        // 🔥 fallback (string scan)
         var raw = content.ToLower();
 
         if (raw.Contains("captured"))

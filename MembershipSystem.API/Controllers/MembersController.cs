@@ -102,18 +102,6 @@ public MembersController(
             return Ok();
         }
 
-        [HttpGet("test-email")]
-        public IActionResult TestEmail()
-        {
-            _emailService.SendEmail(
-                "eren.bstnc.eb@gmail.com",
-                "Test Mail",
-                "Dette er et test mail"
-            );
-
-            return Ok("Test mail gönderildi");
-        }
-
         [HttpGet("expiring-soon")]
         public IActionResult ExpiringSoon()
         {
@@ -124,242 +112,99 @@ public MembersController(
             return Ok(soon);
         }
 
-        [HttpPost("send-reminder-mails")]
-        public IActionResult SendReminderEmails()
+        [AllowAnonymous]
+        [HttpGet("payment-result")]
+        [Produces("text/html")]
+        public async Task<IActionResult> PaymentResult(int memberId, string reference)
         {
-            var members = _context.Members
-                .Where(x => x.EndDate <= DateTime.Now.AddDays(7) && x.EndDate >= DateTime.Now && !x.IsDeleted)
-                .ToList();
+            var payment = _context.Payments
+                .FirstOrDefault(p => p.PaymentReference == reference);
 
-            foreach (var member in members)
+            if (payment == null)
+                return NotFound("Payment not found");
+
+            if (payment.PaymentDate != null)
+                return Content(GetSuccessHtml(), "text/html");
+
+            var callbackRequest = new VippsCallbackRequest { Reference = reference };
+
+            var vippsStatus = await _vippsService.GetPaymentStatus(reference);
+
+            if (vippsStatus == "CAPTURED" || vippsStatus == "AUTHORIZED")
             {
-                var body = $@"
-        Hello {member.FullName},
+                payment.PaymentDate = DateTime.Now;
 
-        Your membership will expire on {member.EndDate:dd.MM.yyyy}.
+                var member = _context.Members
+                    .FirstOrDefault(m => m.Id == memberId);
 
-        Please renew it in time.
+                if (member != null)
+                {
+                    if (member.EndDate < DateTime.Today)
+                        member.EndDate = DateTime.Today.AddYears(1);
+                    else
+                        member.EndDate = member.EndDate.AddYears(1);
 
-        Best regards,
-        Mentorung
-        ";
+                    member.Status = "Active";
+                    member.ReminderCount = 0;
+                    member.LastReminderSent = null;
+                }
 
-                _emailService.SendEmail(member.Email, "Membership Expiring Soon", body);
+                _context.SaveChanges();
+
+                return Content(GetSuccessHtml(), "text/html");
             }
 
-            return Ok("Reminder emails sent");
+            return Content(GetPendingHtml(), "text/html");
         }
 
-        [HttpPost("{id}/send-payment-link")]
-        public async Task<IActionResult> SendPaymentLink(int id)
+        private string GetSuccessHtml()
         {
-            var member = _context.Members.FirstOrDefault(m => m.Id == id);
-
-            if (member == null)
-                return NotFound();
-
-            var vippsLink = await _vippsService.CreatePaymentLink(member.Id);
-
-            if (vippsLink == "ALREADY_PAID")
-                return BadRequest("User already paid");
-
-            var body = $@"
-        <!DOCTYPE html>
-        <html>
-        <head><meta charset='utf-8'></head>
-        <body style='margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;'>
-          <table width='100%' cellpadding='0' cellspacing='0' style='background:#f4f4f4;padding:30px 0;'>
-            <tr><td align='center'>
-              <table width='600' cellpadding='0' cellspacing='0' style='background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);'>
-
-                <tr>
-                  <td style='background:#1A2F5F;padding:30px;text-align:center;'>
-                    <img src='https://mentorung.no/wp-content/uploads/2021/01/cropped-cropped-cropped-MentorUng-LOGO.png' 
-                         alt='MentorUng Agder' height='60' style='display:block;margin:0 auto;'>
-                  </td>
-                </tr>
-
-                <tr>
-                  <td style='background:#C0392B;height:4px;'></td>
-                </tr>
-
-                <tr>
-                  <td style='padding:40px 40px 20px 40px;'>
-                    <h2 style='color:#1A2F5F;margin:0 0 16px 0;'>Hei, {member.FullName}!</h2>
-                    <p style='color:#444;font-size:16px;line-height:1.6;'>
-                      Takk for at du er en del av <strong>MentorUng Agder</strong>!
-                    </p>
-                    <p style='color:#444;font-size:16px;line-height:1.6;'>
-                    Her er din betalingslenke for medlemskapsfornyelse. 
-                      Klikk på knappen nedenfor for å betale enkelt med Vipps.
-                    </p>
-                  </td>
-                </tr>
-
-                <tr>
-                <td style='padding:20px 40px;text-align:center;'>
-                    <a href='{vippsLink}' 
-                       style='background:#C0392B;color:#ffffff;padding:14px 32px;text-decoration:none;
-                              border-radius:6px;font-size:16px;font-weight:bold;display:inline-block;'>
-                      Betal med Vipps
-                    </a>
-                  </td>
-                </tr>
-
-                <tr>
-                  <td style='padding:20px 40px;'>
-                    <p style='color:#888;font-size:14px;line-height:1.6;'>
-                      Beløp: <strong>300 kr</strong>. 
-                      Har du spørsmål? Ta kontakt med oss på 
-                      <a href='mailto:kontakt@mentorung.no' style='color:#1A2F5F;'>kontakt@mentorung.no</a>.
-                    </p>
-                  </td>
-                </tr>
-
-                <tr>
-                  <td style='background:#1A2F5F;padding:24px 40px;text-align:center;'>
-                    <p style='color:#ffffff;font-size:14px;margin:0;'>
-                      Mvh, <strong>MentorUng Agder</strong>
-                    </p>
-                    <p style='color:#aabbcc;font-size:12px;margin:8px 0 0 0;'>
-                      <a href='https://mentorung.no' style='color:#aabbcc;'>mentorung.no</a>
-                    </p>
-                  </td>
-                </tr>
-
-              </table>
-            </td></tr>
-          </table>
-        </body>
-        </html>";
-
-            _emailService.SendEmail(
-                member.Email,
-                "Betalingslenke for medlemskap – MentorUng Agder",
-                body);
-
-            return Ok("Payment link sent");
+            return @"
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset='utf-8'>
+                <title>Payment Successful</title>
+                <style>
+                    body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f5f5f5; }
+                    .box { background: white; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+                    h1 { color: #2e7d32; }
+                    p { color: #555; }
+                </style>
+            </head>
+            <body>
+                <div class='box'>
+                    <h1>✅ Payment Successful!</h1>
+                    <p>Your membership has been renewed successfully.</p>
+                    <p>You will receive a confirmation email shortly.</p>
+                </div>
+            </body>
+            </html>";
         }
 
-        [HttpPost("create-test-members")]
-public IActionResult CreateTestMembers()
-{
-    var members = new List<Member>
-    {
-        new Member
+        private string GetPendingHtml()
         {
-            FullName = "Test Expiring 1",
-            Email = "eren.bstnc.eb@gmail.com",
-            PhoneNumber = "12345678",
-            Kommune = "Oslo",
-            Adresse = "Test Street 1",
-            Fodselsdato = new DateTime(1990, 1, 1),
-            EndDate = DateTime.Now.AddDays(3),
-            IsDeleted = false,
-            Status = "Active",
-            StartDate = DateTime.Now
-        },
-    };
-
-    _context.Members.AddRange(members);
-    _context.SaveChanges();
-
-    return Ok("Test members created");
-}
-
-[AllowAnonymous]
-[HttpGet("payment-result")]
-[Produces("text/html")]
-public async Task<IActionResult> PaymentResult(int memberId, string reference)
-{
-    var payment = _context.Payments
-        .FirstOrDefault(p => p.PaymentReference == reference);
-
-    if (payment == null)
-        return NotFound("Payment not found");
-
-    if (payment.PaymentDate != null)
-        return Content(GetSuccessHtml(), "text/html");
-
-    var callbackRequest = new VippsCallbackRequest { Reference = reference };
-
-    var vippsStatus = await _vippsService.GetPaymentStatus(reference);
-
-    if (vippsStatus == "CAPTURED" || vippsStatus == "AUTHORIZED")
-    {
-        payment.PaymentDate = DateTime.Now;
-
-        var member = _context.Members
-            .FirstOrDefault(m => m.Id == memberId);
-
-        if (member != null)
-        {
-            if (member.EndDate < DateTime.Today)
-                member.EndDate = DateTime.Today.AddYears(1);
-            else
-                member.EndDate = member.EndDate.AddYears(1);
-
-            member.Status = "Active";
-            member.ReminderCount = 0;
-            member.LastReminderSent = null;
+            return @"
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset='utf-8'>
+                <title>Payment Processing</title>
+                <style>
+                    body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f5f5f5; }
+                    .box { background: white; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+                    h1 { color: #f57c00; }
+                    p { color: #555; }
+                </style>
+            </head>
+            <body>
+                <div class='box'>
+                    <h1>⏳ Payment Processing...</h1>
+                    <p>Your payment is being processed.</p>
+                    <p>Please wait a moment and refresh the page.</p>
+                </div>
+            </body>
+            </html>";
         }
-
-        _context.SaveChanges();
-
-        return Content(GetSuccessHtml(), "text/html");
-    }
-
-    return Content(GetPendingHtml(), "text/html");
-}
-
-private string GetSuccessHtml()
-{
-    return @"
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset='utf-8'>
-        <title>Payment Successful</title>
-        <style>
-            body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f5f5f5; }
-            .box { background: white; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
-            h1 { color: #2e7d32; }
-            p { color: #555; }
-        </style>
-    </head>
-    <body>
-        <div class='box'>
-            <h1>✅ Payment Successful!</h1>
-            <p>Your membership has been renewed successfully.</p>
-            <p>You will receive a confirmation email shortly.</p>
-        </div>
-    </body>
-    </html>";
-}
-
-private string GetPendingHtml()
-{
-    return @"
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset='utf-8'>
-        <title>Payment Processing</title>
-        <style>
-            body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f5f5f5; }
-            .box { background: white; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
-            h1 { color: #f57c00; }
-            p { color: #555; }
-        </style>
-    </head>
-    <body>
-        <div class='box'>
-            <h1>⏳ Payment Processing...</h1>
-            <p>Your payment is being processed.</p>
-            <p>Please wait a moment and refresh the page.</p>
-        </div>
-    </body>
-    </html>";
-}
     }
 }
