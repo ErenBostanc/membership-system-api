@@ -47,7 +47,7 @@ public MembersController(
 
         [AllowAnonymous]
 [HttpPost]
-public IActionResult Create(CreateMemberRequest request)
+public async Task<IActionResult> Create(CreateMemberRequest request)
 {
     var member = new Member
     {
@@ -58,7 +58,7 @@ public IActionResult Create(CreateMemberRequest request)
         Adresse = request.Adresse,
         Fodselsdato = request.Fodselsdato,
         StartDate = DateTime.Now,
-        EndDate = DateTime.Now, // Ödeme yapılana kadar bugün
+        EndDate = DateTime.Now,
         Status = "Pending",
         IsDeleted = false
     };
@@ -66,8 +66,7 @@ public IActionResult Create(CreateMemberRequest request)
     _context.Members.Add(member);
     _context.SaveChanges();
 
-    // Otomatik Vipps mail gönder
-    Task.Run(async () =>
+    try
     {
         var vippsLink = await _vippsService.CreatePaymentLink(member.Id);
         if (vippsLink != "ALREADY_PAID")
@@ -132,7 +131,11 @@ public IActionResult Create(CreateMemberRequest request)
 </body>
 </html>");
         }
-    });
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Mail error: " + ex.Message);
+    }
 
     return Ok(member);
 }
