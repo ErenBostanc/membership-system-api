@@ -1,7 +1,4 @@
 using Hangfire.Dashboard;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Text;
 
 namespace MembershipSystem.API
 {
@@ -10,40 +7,22 @@ namespace MembershipSystem.API
         public bool Authorize(DashboardContext context)
         {
             var httpContext = context.GetHttpContext();
-            
-            var token = httpContext.Request.Cookies["HangfireToken"] ?? 
-                        httpContext.Request.Headers["Authorization"]
-                            .ToString().Replace("Bearer ", "");
 
-            if (string.IsNullOrEmpty(token))
-                return false;
+            var authHeader = httpContext.Request.Headers["Authorization"].ToString();
 
-            try
+            if (authHeader.StartsWith("Basic "))
             {
-                var key = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(
-                        httpContext.RequestServices
-                            .GetRequiredService<IConfiguration>()["Jwt__Secret"] ??
-                        httpContext.RequestServices
-                            .GetRequiredService<IConfiguration>()["Jwt:Secret"]));
+                var encoded = authHeader.Substring("Basic ".Length).Trim();
+                var decoded = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(encoded));
+                var parts = decoded.Split(':');
 
-                var handler = new JwtSecurityTokenHandler();
-                handler.ValidateToken(token, new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = key,
-                    ValidateIssuer = true,
-                    ValidIssuer = "MembershipApp",
-                    ValidateAudience = true,
-                    ValidAudience = "MembershipAppUsers"
-                }, out _);
+                if (parts.Length == 2 && parts[0] == "admin@test.com" && parts[1] == "1234")
+                    return true;
+            }
 
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
+            httpContext.Response.Headers["WWW-Authenticate"] = "Basic realm=\"Hangfire Dashboard\"";
+            httpContext.Response.StatusCode = 401;
+            return false;
         }
     }
 }
