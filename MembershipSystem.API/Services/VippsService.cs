@@ -142,7 +142,6 @@ public async Task<string> GetPaymentStatus(string reference)
             .GetProperty("access_token")
             .GetString();
 
-        // 2️⃣ Doğru endpoint (details önemli!)
         var url = $"{_configuration["Vipps:BaseUrl"]}/epayment/v1/payments/{reference}";
 
         var request = new HttpRequestMessage(HttpMethod.Get, url);

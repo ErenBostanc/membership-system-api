@@ -31,7 +31,6 @@ namespace MembershipSystem.API.Services
             {
                 var daysLeft = (member.EndDate - today).Days;
 
-                // ödeme yapılmış mı kontrol
                 var paid = _context.Payments.Any(p =>
                     p.MemberId == member.Id &&
                     p.PaymentYear == today.Year + 1 &&
@@ -43,7 +42,6 @@ namespace MembershipSystem.API.Services
                 var isTestUser =
                         member.Email == "eren.bstnc.eb@gmail.com";
 
-                // 1️⃣ 30 gün kala
                 if (daysLeft <= 30 && member.ReminderCount == 0 || isTestUser)
                 {
                     SendReminder(member);
@@ -51,7 +49,6 @@ namespace MembershipSystem.API.Services
                     member.LastReminderSent = DateTime.Now;
                 }
 
-                // 2️⃣ 7 gün kala
                 else if (daysLeft <= 7 && member.ReminderCount == 1 || isTestUser)
                 {
                     SendReminder(member);
@@ -59,7 +56,6 @@ namespace MembershipSystem.API.Services
                     member.LastReminderSent = DateTime.Now;
                 }
 
-                // 3️⃣ Expired ise status güncelle
                 if (member.EndDate < today)
                 {
                     member.Status = "Expired";

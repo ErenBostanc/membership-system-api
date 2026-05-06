@@ -45,6 +45,7 @@ public MembersController(
             return Ok(query.ToList());
         }
 
+        [AllowAnonymous]
         [HttpPost]
         public IActionResult Create(CreateMemberRequest request)
         {
