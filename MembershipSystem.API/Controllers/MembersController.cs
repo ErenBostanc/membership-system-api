@@ -46,28 +46,97 @@ public MembersController(
         }
 
         [AllowAnonymous]
-        [HttpPost]
-        public IActionResult Create(CreateMemberRequest request)
+[HttpPost]
+public IActionResult Create(CreateMemberRequest request)
+{
+    var member = new Member
+    {
+        FullName = request.FullName,
+        Email = request.Email,
+        PhoneNumber = request.PhoneNumber,
+        Kommune = request.Kommune,
+        Adresse = request.Adresse,
+        Fodselsdato = request.Fodselsdato,
+        StartDate = DateTime.Now,
+        EndDate = DateTime.Now, // Ödeme yapılana kadar bugün
+        Status = "Pending",
+        IsDeleted = false
+    };
+
+    _context.Members.Add(member);
+    _context.SaveChanges();
+
+    // Otomatik Vipps mail gönder
+    Task.Run(async () =>
+    {
+        var vippsLink = await _vippsService.CreatePaymentLink(member.Id);
+        if (vippsLink != "ALREADY_PAID")
         {
-            var member = new Member
-            {
-                FullName = request.FullName,
-                Email = request.Email,
-                PhoneNumber = request.PhoneNumber,
-                Kommune = request.Kommune,
-                Adresse = request.Adresse,
-                Fodselsdato = request.Fodselsdato,
-                StartDate = DateTime.Now,
-                EndDate = DateTime.Now.AddYears(1),
-                Status = "Active",
-                IsDeleted = false
-            };
-
-            _context.Members.Add(member);
-            _context.SaveChanges();
-
-            return Ok(member);
+            _emailService.SendEmail(
+                member.Email,
+                "Betalingslenke for medlemskap – MentorUng Agder",
+                $@"<!DOCTYPE html>
+<html>
+<head><meta charset='utf-8'></head>
+<body style='margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;'>
+  <table width='100%' cellpadding='0' cellspacing='0' style='background:#f4f4f4;padding:30px 0;'>
+    <tr><td align='center'>
+      <table width='600' cellpadding='0' cellspacing='0' style='background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);'>
+        <tr>
+          <td style='background:#1A2F5F;padding:30px;text-align:center;'>
+            <img src='https://mentorung.no/wp-content/uploads/2021/01/cropped-cropped-cropped-MentorUng-LOGO.png' 
+                 alt='MentorUng Agder' height='60' style='display:block;margin:0 auto;'>
+          </td>
+        </tr>
+        <tr><td style='background:#C0392B;height:4px;'></td></tr>
+        <tr>
+          <td style='padding:40px 40px 20px 40px;'>
+            <h2 style='color:#1A2F5F;margin:0 0 16px 0;'>Hei, {member.FullName}!</h2>
+            <p style='color:#444;font-size:16px;line-height:1.6;'>
+              Takk for at du registrerte deg som medlem i <strong>MentorUng Agder</strong>!
+            </p>
+            <p style='color:#444;font-size:16px;line-height:1.6;'>
+              For å fullføre registreringen, vennligst betal medlemskontingenten via Vipps.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style='padding:20px 40px;text-align:center;'>
+            <a href='{vippsLink}' 
+               style='background:#C0392B;color:#ffffff;padding:14px 32px;text-decoration:none;
+                      border-radius:6px;font-size:16px;font-weight:bold;display:inline-block;'>
+              Betal med Vipps
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td style='padding:20px 40px;'>
+            <p style='color:#888;font-size:14px;line-height:1.6;'>
+              Beløp: <strong>300 kr</strong>. 
+              Har du spørsmål? Ta kontakt med oss på 
+              <a href='mailto:kontakt@mentorung.no' style='color:#1A2F5F;'>kontakt@mentorung.no</a>.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style='background:#1A2F5F;padding:24px 40px;text-align:center;'>
+            <p style='color:#ffffff;font-size:14px;margin:0;'>Mvh, <strong>MentorUng Agder</strong></p>
+            <p style='color:#aabbcc;font-size:12px;margin:8px 0 0 0;'>
+              <a href='https://mentorung.no' style='color:#aabbcc;'>mentorung.no</a>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>");
         }
+    });
+
+    return Ok(member);
+}
+
         [HttpPut("{id}")]
         public IActionResult Update(int id, CreateMemberRequest request)
         {
